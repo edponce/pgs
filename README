@@ -1,0 +1,10 @@
+Computer Science Grading Helper
+
+This program aids the person grading programming assignments.
+It is a command line tool written in Python 3.
+It uses an object-oriented approach.
+
+Unarchives .tar, .zip, .rar files and allows you to traverse the files
+by answering questions on the terminal.
+The program also allows you to compile and run a program multiple times.
+
