@@ -6,8 +6,8 @@ pscript.py
 From the student info file, the ID is used to run 
 corresponding lab from the labs directory.
 '''
-__author__ = "Eduardo Ponce"
-__date__ = "1/25/2017"
+__author__ = 'Eduardo Ponce'
+__date__ = '1/25/2017'
 ##############################################################################
 
 # Libraries
@@ -30,6 +30,7 @@ labdir = ''    # directory with all students compressed labs
 workdir = ''   # working directory for running labs
 studfile = ''  # file with students info
 studsel = ''   # student ID to start processing
+inpfiles = []  # input files for programs
 force = False  # flag, if set overwrite labs even if exists
 display = False  # flag, if set display student file info and exit
 clean = False  # flag, if set all labs in working directory are deleted
@@ -43,38 +44,42 @@ def parseArgs():
     parser = argparse.ArgumentParser(prog="LabGrader", description="Run CS505 labs")
     
     # Add command line options to parser
-    parser.add_argument("-d", "--labdir", type=str, default=os.getcwd(),
+    parser.add_argument('-d', '--labdir', type=str, default=os.getcwd(),
                         dest="labdir", help="directory with compressed labs")
-    parser.add_argument("-w", "--workdir", type=str, default=os.getcwd(),
+    parser.add_argument('-w', '--workdir', type=str, default=os.getcwd(),
                         dest="workdir", help="working directory for running labs")
-    parser.add_argument("-l", "--studfile", type=str, default="",
-                        dest="studfile", help="file with student info")
-    parser.add_argument("-s", "--studsel", type=str, default="",
-                        dest="studsel", help="student ID to start processing")
-    parser.add_argument("-f", "--force", action="store_true",
-                        dest="force", help="uncompress labs even if exists")
-    parser.add_argument("-y", "--display", action="store_true",
-                        dest="display", help="display student file info and exit")
-    parser.add_argument("-c", "--clean", action="store_true",
-                        dest="clean", help="clean (delete) all labs in working directory and exit")
-    parser.add_argument("-p", "--compiler", type=str, default="g++",
-                        dest="compiler", help="compiler program for building")
+    parser.add_argument('-l', '--studfile', type=str, default='',
+                        dest='studfile', help='file with student info')
+    parser.add_argument('-s', '--studsel', type=str, default='',
+                        dest='studsel', help='student ID to start processing')
+    parser.add_argument('-i', '--input', type=str, action='append', default=[],
+                        dest="inpfiles", help="input file for student programs")
+    parser.add_argument('-f', '--force', action='store_true',
+                        dest='force', help='uncompress labs even if exists')
+    parser.add_argument('-y', '--display', action='store_true',
+                        dest='display', help='display student file info and exit')
+    parser.add_argument('-c', '--clean', action='store_true',
+                        dest='clean', help='clean (delete) all labs in working directory and exit')
+    parser.add_argument('-p', '--compiler', type=str, default='g++',
+                        dest='compiler', help='compiler program for building')
 
     # Parse arguments
     args = parser.parse_args()
     
     # Set global variables with parsed arguments
-    global labdir, workdir, studfile, studsel, force, display, clean, compiler
+    global labdir, workdir, studfile, studsel, inpfiles, force, display, clean, compiler
     labdir = os.path.abspath(args.labdir)
     workdir = os.path.abspath(args.workdir)
     if args.studfile:
         studfile = os.path.abspath(args.studfile)
     studsel = args.studsel
+    for ifile in args.inpfiles: 
+        inpfiles.append(os.path.abspath(ifile)) 
     force = args.force
     display = args.display
     clean = args.clean
     compiler = args.compiler
-    
+
     # Build options for C++ and Python
     global cplusplus, sourcext, buildflags
     if compiler in ["g++"]:
@@ -151,8 +156,9 @@ def loadStudents():
                 
             # Add Student object to list
             sobj = Student(sid, name, labfile, pos)
-            if display: sobj.print()
-            else: studlist.append(sobj)
+            #if display: sobj.print()
+            #else: studlist.append(sobj)
+            studlist.append(sobj)
             pos = pos + 1
             selflag = 1
 
@@ -183,6 +189,17 @@ def processStudents(studlist=None):
     # Traverse student list
     misslist = []  # list for students with no lab submission
     for stud in studlist:
+        # Clean student lab from working directory 
+        if clean:
+            if os.path.exists(stud.sid): shutil.rmtree(stud.sid)
+            continue
+            
+        # Display student info, do not process
+        if display:
+            stud.print()
+            if not stud.lab:
+                misslist.append(stud)
+            continue
 
         # If no lab submission, add student to miss list and skip
         if not stud.lab:
@@ -190,11 +207,7 @@ def processStudents(studlist=None):
             print("*** Warning: no lab found for student ***\n")
             misslist.append(stud)
             continue
-        
-        if clean:
-            if os.path.exists(stud.sid): shutil.rmtree(stud.sid)
-            continue
-            
+       
         # Iterate through each lab of current student
         nlabs = len(stud.lab)
         for i in range(nlabs):
@@ -366,15 +379,35 @@ def compileLab(file='', inc=''):
     try:
         while True:
             iquery = "RUN PROG? [y]es, [n]o --> " + file + ": "
-            res = input(iquery).lower()
+            resstr = input(iquery)
+            reslist = resstr.split()
+            res = reslist[0].lower()
             while not res in ['y', 'n']:
-                res = input(iquery).lower()
+                resstr = input(iquery)
+                reslist = resstr.split()
+                res = reslist[0].lower()
+
+            # Check if input file was selected 
+            inpfile = ''
+            if len(reslist) == 2:
+                inpidx = int(reslist[1])
+
+                # Get file
+                if inpidx >= 0 and inpidx < len(inpfiles):
+                    inpfile = inpfiles[inpidx]
+               
+                if not os.path.exists(inpfile):
+                    break
+
             if res in ['n']: break  # stop using file     
             cmd = compiler + ' ' + buildflags + ' ' + inc + ' ' + file
             print("\n*** compiling: " + cmd + " ***\n")
             if cplusplus:
                 if not os.system(cmd):         
-                    os.system("./prog")
+                    if inpfile:
+                        os.system("./prog < " + inpfile)
+                    else:
+                        os.system("./prog")
                     os.remove("prog")
                     print()
             else:
