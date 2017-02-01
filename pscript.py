@@ -52,7 +52,11 @@ def parseArgs():
                         dest='studfile', help='file with student info')
     parser.add_argument('-s', '--studsel', type=str, default='',
                         dest='studsel', help='student ID to start processing')
-    parser.add_argument('-i', '--input', type=str, action='append', default=[],
+    # Method 1 uses -i for each file
+    # Method 2 uses single -i with multiple files, this allows bash regex
+    # Both are lists so does not affect program
+    #parser.add_argument('-i', '--input', type=str, action='append', default=[],
+    parser.add_argument('-i', '--input', type=str, nargs='+', default='',
                         dest="inpfiles", help="input file for student programs")
     parser.add_argument('-f', '--force', action='store_true',
                         dest='force', help='uncompress labs even if exists')
@@ -135,10 +139,10 @@ def loadStudents():
         fo = open(studfile, "r")
         studDB = findPatterns(["^(?!\s*#+)"], fo.readlines())
         fo.close()
-        print("\nGrading Program (auto mode)")
+        print("Grading Program (auto mode)")
     # Run program manually
     else:
-        print("\nGrading Program (manual mode)")
+        print("Grading Program (manual mode)")
         studlist.append(Student('unknown', 'Foo Bar', labs))
     
     # Traverse each student file entry from database
@@ -185,6 +189,8 @@ Process students lab assignments (uncompress/copy, compile, run)
 '''
 def processStudents(studlist=None):
     os.chdir(workdir)  # move to working directory
+
+    if clean: print("Cleaning workspace: " + workdir)
  
     # Traverse student list
     misslist = []  # list for students with no lab submission
@@ -378,14 +384,20 @@ def compileLab(file='', inc=''):
     # Prompt user to compile/run lab repeatedly
     try:
         while True:
-            iquery = "RUN PROG? [y]es, [n]o --> " + file + ": "
+            iquery = "RUN PROG? [y]es, [n]o, [i]nfiles --> " + file + ": "
             resstr = input(iquery)
             reslist = resstr.split()
             res = reslist[0].lower()
-            while not res in ['y', 'n']:
+            while not res in ['y', 'n', 'i']:
                 resstr = input(iquery)
                 reslist = resstr.split()
                 res = reslist[0].lower()
+
+            # Print input files if selected  
+            if res in ['i']: 
+                for i in range(len(inpfiles)):
+                    print(str(i) + ' ' + inpfiles[i])
+                continue
 
             # Check if input file was selected 
             inpfile = ''
