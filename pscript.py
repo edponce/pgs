@@ -17,6 +17,7 @@ import re, shutil  # regex, filesystem libs
 import zipfile, tarfile  # archive libs
 import rarfile  # archive libs
 import gzip, bz2      # compression libs
+import subprocess, signal # child processes and signals
 ##############################################################################
 
 # Global build options, supports C++ and Python
@@ -35,6 +36,8 @@ force = False  # flag, if set overwrite labs even if exists
 display = False # flag, if set display student file info and exit
 clean = False  # flag, if set all labs in working directory are deleted
 ##############################################################################
+
+proclist = []
 
 '''
 Parse command line arguments
@@ -161,8 +164,6 @@ def loadStudents():
                 
             # Add Student object to list
             sobj = Student(sid, name, labfile, pos)
-            #if display: sobj.print()
-            #else: studlist.append(sobj)
             studlist.append(sobj)
             pos = pos + 1
             selflag = 1
@@ -328,109 +329,124 @@ def extractLab(stud=None,i=0):
 Given a file, use its extension to select a viewer program for opening the file.
 The function builds a command line string that is executed via system command.
 '''
-def viewerSelect(file=''):
+def viewerSelect(afile=''):
     # Parse file extension
-    filenm, filext = os.path.splitext(file)
+    filenm, filext = os.path.splitext(afile)
     filext = filext.lower()
     
     # If a valid C/C++ source file
     if filext in [".cpp", ".hpp", ".c", ".h"]:
-        viewer = "gedit"
+        viewer = "/usr/bin/gedit"
         opts = ''
         #opts = "-lcpp"
     # If a valid Python script file
     elif filext in [".py"]:
-        viewer = "gedit"
+        viewer = "/usr/bin/gedit"
         opts = ''
         #viewer = "notepad++"
         #opts = "-lpython"
     # If a Microsoft Word file
     elif filext in [".doc", ".docx", ".rtf", ".odt"]:
         viewer = "lowriter"
-        #viewer = "/cygdrive/c/Program Files/Microsoft Office 15/root/office15/WINWORD.EXE"
         opts = ''
+        #viewer = "/cygdrive/c/Program Files/Microsoft Office 15/root/office15/WINWORD.EXE"
     # If a Microsoft Excel file
     elif filext in [".xlsx"]:
         viewer = "localc"
-        #viewer = "/cygdrive/c/Program Files/Microsoft Office 15/root/office15/EXCEL.EXE"
         opts = ''
+        #viewer = "/cygdrive/c/Program Files/Microsoft Office 15/root/office15/EXCEL.EXE"
     # If a PDF file
     elif filext in [".pdf"]:
         viewer = "evince"
-        #viewer = "/cygdrive/c/Program Files (x86)/Adobe/Acrobat Reader DC/Reader/AcroRd32.exe"
         opts = ''
+        #viewer = "/cygdrive/c/Program Files (x86)/Adobe/Acrobat Reader DC/Reader/AcroRd32.exe"
     # If an image file
     elif filext in [".jpg", ".png"]:
         viewer = "gpicview"
-        #viewer = "/cygdrive/c/WINDOWS/System32/mspaint.exe"
         opts = ''
+        #viewer = "/cygdrive/c/WINDOWS/System32/mspaint.exe"
     # If unknown file type, assume it is a text file
     else:
-        viewer = "gedit"
+        viewer = "/usr/bin/gedit"
         opts = ''
         #viewer = "notepad++"
         #opts = "-lnormal"
     
     # Open file
-    os.system("\"" + viewer + "\" " + opts + " \"" + file + "\" &")
+    cmd = "\"" + viewer + "\" " + opts + " \"" + afile + "\""
+    proclist.append(subprocess.Popen(cmd, shell=True))
 ##############################################################################
 
 '''
 Compile lab source codes, one source file at a time
 '''
-def compileLab(file='', inc=''):
+def compileLab(afile='', inc=''):
     # Only use include directories for C++ programs
     if not cplusplus: inc = ''
- 
-    # Prompt user to compile/run lab repeatedly
-    try:
-        while True:
-            iquery = "RUN PROG? [y]es, [n]o, [i]nfiles --> " + file + ": "
-            resstr = input(iquery)
-            reslist = resstr.split()
-            res = reslist[0].lower()
-            while not res in ['y', 'n', 'i']:
+
+    # Set attempt limit for compiling program 
+    maxattempts = 3;
+    attempts = 0;
+    while attempts < maxattempts:
+        try:
+            # Prompt user to compile/run lab 
+            while True:
+                iquery = "RUN PROG? [y]es, [n]o, [i]nfiles --> " + afile + ": "
                 resstr = input(iquery)
                 reslist = resstr.split()
                 res = reslist[0].lower()
+                while not res in ['y', 'n', 'i']:
+                    resstr = input(iquery)
+                    reslist = resstr.split()
+                    res = reslist[0].lower()
+                print("enter is " + res)
 
-            # Print input files if selected  
-            if res in ['i']: 
-                for i in range(len(infiles)):
-                    print(str(i) + ' ' + infiles[i])
-                continue
-
-            # Check if input file was selected 
-            infile = ''
-            if len(reslist) == 2:
-                # Validate file index
-                inpidx = int(reslist[1])
-                if inpidx < 0 or inpidx >= len(infiles):
-                    print("*** Warning: index for input file is out of range ***\n")
+                # Print input files if selected  
+                if res in ['i']: 
+                    for i in range(len(infiles)):
+                        print(str(i) + ' ' + infiles[i])
                     continue
 
-                # Get file and validate 
-                infile = infiles[inpidx]
-                if not os.path.exists(infile):
-                    print("*** Warning: input file does not exist ***\n")
-                    continue
- 
-            if res in ['n']: break  # stop using file     
-            cmd = compiler + ' ' + buildflags + ' ' + inc + ' ' + file
-            print("\n*** compiling: " + cmd + " ***\n")
-            if cplusplus:
-                if not os.system(cmd):         
-                    if infile:
-                        os.system("./prog < " + infile)
+                # Check if input file was selected 
+                infile = ''
+                if len(reslist) == 2:
+                    # Validate file index
+                    inpidx = int(reslist[1])
+                    if inpidx < 0 or inpidx >= len(infiles):
+                        print("*** Warning: index for input file is out of range ***\n")
+                        continue
+
+                    # Get file and validate 
+                    infile = infiles[inpidx]
+                    if not os.path.exists(infile):
+                        print("*** Warning: input file does not exist ***\n")
+                        continue
+     
+                # Stop using file     
+                if res in ['n']:
+                    attempts = maxattempts
+                    break
+
+                # Compile and run program
+                cmd = compiler + ' ' + buildflags + ' ' + inc + ' ' + afile
+                print("\n*** compiling: " + cmd + " ***\n")
+                if cplusplus:
+                    if not os.system(cmd):         
+                        progname = "prog"
+                        cmd2 = "./" + progname
+                        if infile: cmd2 = cmd2 + " < " + infile
+                        subprocess.run(cmd2, shell=True)
+                        os.remove(progname)
+                        attempts = 0;
+                        print()
                     else:
-                        os.system("./prog")
-                    os.remove("prog")
+                        attempts = attempts + 1
+                else:
+                    os.system(cmd)
                     print()
-            else:
-                os.system(cmd)
-                print()
-    except:
-        print("\n*** Error: compile/run failed for " + file + " ***\n")
+        except:
+            print("\n*** Error: compile/run failed for " + afile + " ***\n")
+            attempts = attempts + 1
 ##############################################################################
 
 '''
@@ -545,9 +561,19 @@ def processLab(stud=None):
 ##############################################################################
 
 '''
+Search student lab directory for source files
+'''
+def subprockill(plist):
+    for p in plist:
+        p.kill()
+
+##############################################################################
+
+'''
 Main entry point
 '''
 if __name__ == "__main__":
     if parseArgs():
         processStudents(loadStudents())
+    subprockill(proclist)
 # EOF
