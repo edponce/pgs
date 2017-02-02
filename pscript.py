@@ -347,22 +347,22 @@ def viewerSelect(afile=''):
         #opts = "-lpython"
     # If a Microsoft Word file
     elif filext in [".doc", ".docx", ".rtf", ".odt"]:
-        viewer = "lowriter"
+        viewer = "/usr/bin/lowriter"
         opts = ''
         #viewer = "/cygdrive/c/Program Files/Microsoft Office 15/root/office15/WINWORD.EXE"
     # If a Microsoft Excel file
     elif filext in [".xlsx"]:
-        viewer = "localc"
+        viewer = "/usr/bin/localc"
         opts = ''
         #viewer = "/cygdrive/c/Program Files/Microsoft Office 15/root/office15/EXCEL.EXE"
     # If a PDF file
     elif filext in [".pdf"]:
-        viewer = "evince"
+        viewer = "/usr/bin/evince"
         opts = ''
         #viewer = "/cygdrive/c/Program Files (x86)/Adobe/Acrobat Reader DC/Reader/AcroRd32.exe"
     # If an image file
     elif filext in [".jpg", ".png"]:
-        viewer = "gpicview"
+        viewer = "/usr/bin/gpicview"
         opts = ''
         #viewer = "/cygdrive/c/WINDOWS/System32/mspaint.exe"
     # If unknown file type, assume it is a text file
@@ -372,9 +372,10 @@ def viewerSelect(afile=''):
         #viewer = "notepad++"
         #opts = "-lnormal"
     
-    # Open file
+    # Open file, redirect stdout/stderr to /dev/null
     cmd = "\"" + viewer + "\" " + opts + " \"" + afile + "\""
-    proclist.append(subprocess.Popen(cmd, shell=True))
+    proclist.append(subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
+                                     stderr=subprocess.DEVNULL, shell=True))
 ##############################################################################
 
 '''
@@ -393,10 +394,12 @@ def compileLab(afile='', inc=''):
             while True:
                 iquery = "RUN PROG? [y]es, [n]o, [i]nfiles --> " + afile + ": "
                 resstr = input(iquery)
+                if not resstr: continue
                 reslist = resstr.split()
                 res = reslist[0].lower()
                 while not res in ['y', 'n', 'i']:
                     resstr = input(iquery)
+                    if not resstr: continue
                     reslist = resstr.split()
                     res = reslist[0].lower()
 
@@ -433,8 +436,12 @@ def compileLab(afile='', inc=''):
                     if not os.system(cmd):         
                         progname = "prog"
                         cmd2 = "./" + progname
-                        if infile: cmd2 = cmd2 + " < " + infile
-                        subprocess.run(cmd2, shell=True)
+                        if infile:
+                            ifd = open(infile, 'r')
+                            subprocess.run(cmd2, stdin=ifd, shell=True)
+                            ifd.close()
+                        else:
+                            subprocess.run(cmd2, shell=True)
                         os.remove(progname)
                         attempts = 0;
                         print()
