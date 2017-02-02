@@ -174,13 +174,13 @@ def loadStudents():
 '''
 Given a series of regex patterns remove all strings that match in the given list
 '''
-def findPatterns(patterns=[], list=[], mexact=0):       
+def findPatterns(patterns=[], alist=[], mexact=0):       
     # Traverse given patterns
     filtlist = []  # filtered list
     for p in patterns:
         if not mexact: regex = re.compile(p, re.IGNORECASE)
         else: regex = re.compile(r"\b{0}\b".format(p))
-        for l in list:
+        for l in alist:
             if regex.search(l): filtlist.append(l)
 
     return filtlist
@@ -399,7 +399,6 @@ def compileLab(afile='', inc=''):
                     resstr = input(iquery)
                     reslist = resstr.split()
                     res = reslist[0].lower()
-                print("enter is " + res)
 
                 # Print input files if selected  
                 if res in ['i']: 
@@ -533,21 +532,21 @@ def processLab(stud=None):
         for p in findPatterns(["^(\s*[.~]+)","[.]exe$"], files): files.remove(p)
           
         # Traverse files to open/compile
-        for file in files:
-            iquery = "OPEN FILE? [y]es, [n]o, e[x]it --> " + troot + '/' + file + ": "        
+        for afile in files:
+            iquery = "OPEN FILE? [y]es, [n]o, e[x]it --> " + troot + '/' + afile + ": "        
             res = input(iquery).lower()
             while not res in ['y', 'n', 'x']:
                 res = input(iquery).lower()
             # View source file
-            if res in ['y']: viewerSelect(file)
+            if res in ['y']: viewerSelect(afile)
             elif res in ['x']: return  # exit processing lab
             
             # Check if source file, compile or add to compilation parts
-            filenm, filext = os.path.splitext(file)
+            filenm, filext = os.path.splitext(afile)
             filext = filext.lower()
             if filext in sourcext:
-                if not pidx: compileLab('\"' + file + '\"')
-                else: parseRelPaths(troot, partbases, partfiles, file, 1)
+                if not pidx: compileLab('\"' + afile + '\"')
+                else: parseRelPaths(troot, partbases, partfiles, afile, 1)
      
     # Compile each lab part, if necessary
     for i in range(pidx):
@@ -561,12 +560,10 @@ def processLab(stud=None):
 ##############################################################################
 
 '''
-Search student lab directory for source files
+Kill all active child processes
 '''
 def subprockill(plist):
-    for p in plist:
-        p.kill()
-
+    for p in plist: p.kill()
 ##############################################################################
 
 '''
