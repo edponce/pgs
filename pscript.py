@@ -7,7 +7,7 @@ From the student info file, the ID is used to run
 corresponding lab from the labs directory.
 '''
 __author__ = 'Eduardo Ponce'
-__date__ = '1/25/2017'
+__date__ = '2/1/2017'
 ##############################################################################
 
 # Libraries
@@ -458,10 +458,11 @@ def processLab(stud=None):
     partdirs = [[] for i in range(2)]  # store directories for lab parts
     partfiles = [[] for i in range(2)]  # store source files for lab parts
     partbases = []  # store the base directories for lab parts
-    
+   
     # Check if current directory is itself a lab part
     print()
-    if len(os.listdir()) > 0: print(os.path.basename(os.getcwd()) + '/' + str(os.listdir()))
+    if len(os.listdir()) > 0:
+        print(os.path.basename(os.getcwd()) + '/' + str(os.listdir()))
     iquery = "USE DIRECTORY? [y]es, [n]o, [c]ompile, e[x]it --> " + os.path.basename(os.getcwd()) + ": "
     res = input(iquery).lower()
     while not res in ['y', 'n', 'c', 'x']:
@@ -471,7 +472,7 @@ def processLab(stud=None):
         partbases.append(os.path.basename(os.getcwd()))  # add to base parts directories
         pidx = pidx + 1  # part number
     elif res in ['n', 'x']: return  # exit processing lab
-        
+       
     # Traverse the lab directory tree
     for root, dirs, files in os.walk(os.getcwd()):
         # Move to current root directory
@@ -487,10 +488,12 @@ def processLab(stud=None):
         # Print directories available
         print()
         if len(dirs) > 0: print(troot + '/' + str(dirs))
-            
+
         # Traverse subdirectories to prune    
         tdirs = dirs[:]  # get copy of subdirectory list, slice
         for d in tdirs:
+            if len(os.listdir(d)) > 0:
+                print(os.path.basename(os.getcwd()) + '/' + d + '/' + str(os.listdir(d)))
             iquery = "USE DIRECTORY? [y]es, [n]o, [c]ompile, e[x]it --> " + d + ": "
             res = input(iquery).lower()
             while not res in ['y', 'n', 'c', 'x']:
@@ -503,7 +506,7 @@ def processLab(stud=None):
                     partbases.append(d)  # add to base parts directories
                     pidx = pidx + 1  # part number
             elif res in ['x']: return  # exit processing lab          
-    
+
         # Prune hidden/temporary/executable files
         for p in findPatterns(["^(\s*[.~]+)","[.]exe$"], files): files.remove(p)
           
