@@ -30,9 +30,9 @@ labdir = ''    # directory with all students compressed labs
 workdir = ''   # working directory for running labs
 studfile = ''  # file with students info
 studsel = ''   # student ID to start processing
-inpfiles = []  # input files for programs
+infiles = []   # input files for programs
 force = False  # flag, if set overwrite labs even if exists
-display = False  # flag, if set display student file info and exit
+display = False # flag, if set display student file info and exit
 clean = False  # flag, if set all labs in working directory are deleted
 ##############################################################################
 
@@ -53,11 +53,12 @@ def parseArgs():
     parser.add_argument('-s', '--studsel', type=str, default='',
                         dest='studsel', help='student ID to start processing')
     # Method 1 uses -i for each file
-    # Method 2 uses single -i with multiple files, this allows bash regex
+    # Method 2 uses single -i with multiple files which permits bash regex
     # Both are lists so does not affect program
-    #parser.add_argument('-i', '--input', type=str, action='append', default=[],
-    parser.add_argument('-i', '--input', type=str, nargs='+', default='',
-                        dest="inpfiles", help="input file for student programs")
+    # parser.add_argument('-i', '--infile', type=str, action='append', default='',
+    #                     dest="infiles", help="input file for student programs")
+    parser.add_argument('-i', '--infiles', type=str, nargs='+', default='',
+                        dest="infiles", help="input files for student programs")
     parser.add_argument('-f', '--force', action='store_true',
                         dest='force', help='uncompress labs even if exists')
     parser.add_argument('-y', '--display', action='store_true',
@@ -71,14 +72,14 @@ def parseArgs():
     args = parser.parse_args()
     
     # Set global variables with parsed arguments
-    global labdir, workdir, studfile, studsel, inpfiles, force, display, clean, compiler
+    global labdir, workdir, studfile, studsel, infiles, force, display, clean, compiler
     labdir = os.path.abspath(args.labdir)
     workdir = os.path.abspath(args.workdir)
     if args.studfile:
         studfile = os.path.abspath(args.studfile)
     studsel = args.studsel
-    for ifile in args.inpfiles: 
-        inpfiles.append(os.path.abspath(ifile)) 
+    for ifile in args.infiles: 
+        infiles.append(os.path.abspath(ifile)) 
     force = args.force
     display = args.display
     clean = args.clean
@@ -380,7 +381,7 @@ Compile lab source codes, one source file at a time
 def compileLab(file='', inc=''):
     # Only use include directories for C++ programs
     if not cplusplus: inc = ''
-  
+ 
     # Prompt user to compile/run lab repeatedly
     try:
         while True:
@@ -395,29 +396,32 @@ def compileLab(file='', inc=''):
 
             # Print input files if selected  
             if res in ['i']: 
-                for i in range(len(inpfiles)):
-                    print(str(i) + ' ' + inpfiles[i])
+                for i in range(len(infiles)):
+                    print(str(i) + ' ' + infiles[i])
                 continue
 
             # Check if input file was selected 
-            inpfile = ''
+            infile = ''
             if len(reslist) == 2:
+                # Validate file index
                 inpidx = int(reslist[1])
+                if inpidx < 0 or inpidx >= len(infiles):
+                    print("*** Warning: index for input file is out of range ***\n")
+                    continue
 
-                # Get file
-                if inpidx >= 0 and inpidx < len(inpfiles):
-                    inpfile = inpfiles[inpidx]
-               
-                if not os.path.exists(inpfile):
-                    break
-
+                # Get file and validate 
+                infile = infiles[inpidx]
+                if not os.path.exists(infile):
+                    print("*** Warning: input file does not exist ***\n")
+                    continue
+ 
             if res in ['n']: break  # stop using file     
             cmd = compiler + ' ' + buildflags + ' ' + inc + ' ' + file
             print("\n*** compiling: " + cmd + " ***\n")
             if cplusplus:
                 if not os.system(cmd):         
-                    if inpfile:
-                        os.system("./prog < " + inpfile)
+                    if infile:
+                        os.system("./prog < " + infile)
                     else:
                         os.system("./prog")
                     os.remove("prog")
@@ -486,12 +490,14 @@ def processLab(stud=None):
         for p in findPatterns(["^(\s*[.~]+)", "MACOSX"], dirs): dirs.remove(p)
         
         # Print directories available
-        print()
-        if len(dirs) > 0: print(troot + '/' + str(dirs))
+        #print()
+        #if len(dirs) > 0: print(troot + '/' + str(dirs))
 
         # Traverse subdirectories to prune    
         tdirs = dirs[:]  # get copy of subdirectory list, slice
         for d in tdirs:
+            # Print files inside current directory
+            print()
             if len(os.listdir(d)) > 0:
                 print(os.path.basename(os.getcwd()) + '/' + d + '/' + str(os.listdir(d)))
             iquery = "USE DIRECTORY? [y]es, [n]o, [c]ompile, e[x]it --> " + d + ": "
