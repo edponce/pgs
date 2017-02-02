@@ -233,6 +233,9 @@ def processStudents(studlist=None):
                 # Uncompress/copy lab and run
                 if extractLab(stud,i): processLab(stud)
                 os.chdir(workdir)  # move back to working directory
+            
+            # Close files opened for current user
+            subprockill(proclist)
     
     # Print students missing lab submissions
     if misslist:
@@ -579,5 +582,4 @@ Main entry point
 if __name__ == "__main__":
     if parseArgs():
         processStudents(loadStudents())
-    subprockill(proclist)
 # EOF
