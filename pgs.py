@@ -95,7 +95,7 @@ def parseArgs():
     if compiler in ["g++"]:
         cplusplus = True
         sourcext = [".cpp", ".c"]
-        buildflags = "-Wall -Wextra -pedantic -std=c++11 -o prog"
+        buildflags = "-Wall -Wextra -pedantic -o prog"
     elif compiler in ["python"]:
         cplusplus = True
         sourcext = [".py"]
@@ -229,7 +229,12 @@ def processStudents(studlist=None):
                 while not res in ['y', 'n', 'x']:
                     res = input(iquery).lower()
                 print()
-                if res in ['x']: return  # quit program
+
+                if res in ['x']:
+                    # Close files opened for current user
+                    subprockill(proclist)
+                    return  # quit program
+
                 if res in ['n']: break   # go to next student
             
                 # Uncompress/copy lab and run
