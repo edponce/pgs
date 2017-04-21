@@ -1,9 +1,9 @@
 TODO
 
-*.tex
-*.bib
-build/
+doc/
 ref/
 
+yosh/
+bash-4.4/
 notebook_tk.py
 tetris_wx.py

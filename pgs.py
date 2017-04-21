@@ -91,13 +91,15 @@ def parseArgs():
     compiler = args.compiler
 
     # Build options for C++ and Python
-    global cplusplus, sourcext, buildflags
+    global cplusplus, python, sourcext, buildflags
     if compiler in ["g++"]:
         cplusplus = True
+        python = False 
         sourcext = [".cpp", ".c"]
         buildflags = "-Wall -Wextra -pedantic -o prog"
     elif compiler in ["python"]:
-        cplusplus = True
+        cplusplus = False
+        python = True 
         sourcext = [".py"]
         buildflags = ''
     else:
@@ -457,6 +459,9 @@ def compileLab(afile='', inc=''):
                         print()
                     else:
                         attempts = attempts + 1
+                elif python:
+                    subprocess.run(cmd, shell=True)
+                    print()
                 else:
                     os.system(cmd)
                     print()
