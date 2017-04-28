@@ -566,6 +566,7 @@ def processLab(stud=None):
             # Check if source file, compile or add to compilation parts
             filenm, filext = os.path.splitext(afile)
             filext = filext.lower()
+            print(pidx)
             if filext in sourcext:
                 if not pidx: compileLab('\"' + afile + '\"')
                 else: parseRelPaths(troot, partbases, partfiles, afile, 1)
