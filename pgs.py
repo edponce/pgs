@@ -97,7 +97,7 @@ def parseArgs():
         python = False 
         sourcext = [".cpp", ".c"]
         buildflags = "-Wall -Wextra -pedantic -o prog"
-    elif compiler in ["python"]:
+    elif compiler in ["python3"]:
         cplusplus = False
         python = True 
         sourcext = [".py"]
