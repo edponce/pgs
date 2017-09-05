@@ -377,6 +377,10 @@ def viewerSelect(afile=''):
         viewer = "/usr/bin/gpicview"
         opts = ''
         #viewer = "/cygdrive/c/WINDOWS/System32/mspaint.exe"
+    # If a video file
+    elif filext in [".mp4", ".avi"]:
+        viewer = "/usr/bin/vlc"
+        opts = ''
     # If unknown file type, assume it is a text file
     else:
         viewer = "/usr/bin/gedit"
