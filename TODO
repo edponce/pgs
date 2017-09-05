@@ -13,3 +13,4 @@ Commands:
     compile program
     run program 
 
+design GUI interface (ncurses, qt, gtk)
