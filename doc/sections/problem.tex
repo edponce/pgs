@@ -1,0 +1,56 @@
+\section{The CS TA Grading Problem}
+\label{sec:problem}
+
+\tab A predominant issue that arises in programming courses is the process of grading homeworks.
+Usually these courses make use of one or multiple teaching assistants to manage
+the grading process, given that the time and effort required may not be feasible by the
+professor himself.
+I have been a teaching assistant for several graduate courses in EECS department at UTK.
+In Spring 2016 I was TA for \textit{``COSC 505 - Introduction to Programming
+for Scientists and Engineers''} taught by Dr. Gregory D. Peterson.
+It was the first time as a TA in which I had to grade over 30 programming homeworks
+in a weekly manner.
+Lets consider that it takes 10 minutes per homework,
+including submitting the student's grade and feedback,
+then it would take 5 hours for all homeworks which amounts to 25\% -- 50\% of a TA's time
+considering a 10 -- 20 hour appointment.
+To be more realistic, the time per homework varies based on the problem's difficulty,
+speed of user inputs, and code structure,
+leading to cases where it takes noticeably more than 10 minutes.
+The total number of students enrolled in introductory programming courses at UTK
+surpasses 30 students by much (multiple courses, multiple sections) which means
+that a large portion of TA's time is spent grading.
+Reducing the grading process would increase TA's availability for office hours, tutoring,
+and research work. \par
+\vspace{1em}
+
+From my experience, the grading process involves the following steps:
+\begin{enumerate}
+    \item Students submit homeworks via a method established by the professor
+    \begin{enumerate}
+        \item course delivery and management software (Blackboard, Canvas)
+        \item server associated with institution/deparment
+        \item other internet technologies (file sharing, repositories, email) 
+    \end{enumerate}
+    \item TA acquires homeworks
+    \item TA processes homeworks
+    \item TA provides grades and feedback to students, usually via the same
+          method used for homework submission
+\end{enumerate}
+
+\tab Steps 1 and 2 can be accomplished easily and efficiently with course management software.
+If another method is used for homework submissions, an important aspect to specify 
+is a naming convention for the submission package
+to prevent name collisions, overwrites, or human confusion.
+Step 3 is the core step and has several inherent issues.
+Most programs make use of some type of input (e.g., user, file, another program) and
+the search space between correct inputs-outputs can be infinite.
+Also, depending on the course instructions, a submission package may include
+additional files besides the source files (e.g., manual, reports, figures).
+Currently, there is no single solution for resolving these issues.
+\hyperref[sec:litreview]{Section 3} discusses several existing tools and approaches.
+Step 4 depends on step 1 for the method used to interface with students.
+Nevertheless, most likely the TA has to upload both the grades and feedback
+for each student one at a time.
+
+

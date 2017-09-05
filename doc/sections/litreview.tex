@@ -1,0 +1,35 @@
+\section{Existing Tools}
+\label{sec:litreview}
+
+\tab The CS TA grading problem is not new and multiple software educational tools
+have been developed to perform automatic testing and feedback for software programs.
+The most common approach to verify a deterministic program is to compare
+computation results against a fixed set of test cases
+~\cite{gao2015auto,gao2016automated}, similar to a test suite.
+This method is trivial but depends that the program's inputs
+and outputs have a specific order or tags for parsing, and feedback is up to the TA.
+For introductory programming courses at UTK,
+Dr. Vander Zanden leads the development of
+\textit{CodeAssessor} project ~\cite{zandenUTKcodeassessor,zanden2012codeassessor}.
+CodeAssessor is a web-based tool for assessing and providing feedback to
+students ~\cite{vander2013improving}.
+The CS grading problem increases in scale in the context of
+massive open online courses (MOOCs) via providers
+like Coursera, Khan Academy, edX, Canvas, etc.
+MIT's CSAIL in collaboration with Microsoft Research has an effort to develop
+computer science education tools for MOOCs.
+One such tool~\cite{singh2013automated} parses source files to develop a
+sketch of the program which is used to validate correctness and provide feedback.
+Related tools make use of statistical and
+machine learning techniques~\cite{antonucci2015incremental,srikant2014}.
+Examples of web services for automatic grading are
+Web-CAT~\cite{webcat} and Stepik~\cite{stepik}. \par
+
+\tab These tools are very interesting and necessary, but they require
+the user to either log in to a website, install an application, and only
+support a few programming languages.
+In the context of simple programs, such as in introductory CS course, these
+tools may become too complex to use.
+The philosophy behind PGS is for a TA to perform manual grading with ease.
+PGS does not focus on parsing source files and automatically detecting programming errors. 
+

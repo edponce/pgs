@@ -1,0 +1,15 @@
+manual
+configuration file
+clean code
+change system calls to subprocess
+
+Programming Grader Shell
+refactor framework to behave like a shell with custom commands, commands that are not part of framework are passed directly to real shell. Maybe it is better to make real shell commands prepend an 'l' similar to sftp.
+Commands:
+    next/prev student
+    list/open files
+    set input/output files 
+    mark/classify directories/files for compilation
+    compile program
+    run program 
+
