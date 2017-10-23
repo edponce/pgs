@@ -3,7 +3,7 @@
 '''
 pscript.py
 
-From the student info file, the ID is used to run 
+From the student info file, the ID is used to run
 corresponding lab from the labs directory.
 '''
 __author__ = 'Eduardo Ponce'
@@ -38,7 +38,7 @@ clean = False  # flag, if set all labs in working directory are deleted
 ##############################################################################
 
 # Subprocess handles are stored in a list
-# to enable signal communication (e.g., kill) 
+# to enable signal communication (e.g., kill)
 proclist = []
 
 '''
@@ -47,7 +47,7 @@ Parse command line arguments
 def parseArgs():
     # Create argument parser object
     parser = argparse.ArgumentParser(prog="LabGrader", description="Run CS505 labs")
-    
+
     # Add command line options to parser
     parser.add_argument('-d', '--labdir', type=str, default=os.getcwd(),
                         dest="labdir", help="directory with compressed labs")
@@ -75,7 +75,7 @@ def parseArgs():
 
     # Parse arguments
     args = parser.parse_args()
-    
+
     # Set global variables with parsed arguments
     global labdir, workdir, studfile, studsel, infiles, force, display, clean, compiler
     labdir = os.path.abspath(args.labdir)
@@ -83,8 +83,8 @@ def parseArgs():
     if args.studfile:
         studfile = os.path.abspath(args.studfile)
     studsel = args.studsel
-    for ifile in args.infiles: 
-        infiles.append(os.path.abspath(ifile)) 
+    for ifile in args.infiles:
+        infiles.append(os.path.abspath(ifile))
     force = args.force
     display = args.display
     clean = args.clean
@@ -94,19 +94,19 @@ def parseArgs():
     global cplusplus, python, sourcext, buildflags
     if compiler in ["g++"]:
         cplusplus = True
-        python = False 
+        python = False
         sourcext = [".cpp", ".c"]
         buildflags = "-Wall -Wextra -pedantic -o prog"
     elif compiler in ["python3"]:
         cplusplus = False
-        python = True 
+        python = True
         sourcext = [".py"]
         buildflags = ''
     else:
         print("*** Error: unsupported compiler selected ***\n")
         return False
     return True
-        
+
 ##############################################################################
 
 '''
@@ -135,10 +135,10 @@ and the students lab submissions. Moves to working directory.
 '''
 def loadStudents():
     os.chdir(workdir)  # move to working directory
- 
+
     # Load students labs into local variable
     labs = os.listdir(labdir)
-    
+
     # Load students file contents into local variable
     # Skip student entry if begins with '#'
     studDB = []    # student entry database
@@ -152,20 +152,20 @@ def loadStudents():
     else:
         print("Grading Program (manual mode)")
         studlist.append(Student('unknown', 'Foo Bar', labs))
-    
+
     # Traverse each student file entry from database
     pos = selflag = 0
-    for stud in studDB:  
+    for stud in studDB:
         # Split student entry into form [ID, FIRSTNAME, LASTNAME]
         sid, fn, ln = stud.split()
         name = fn + ' ' + ln
-        
+
         # Load all students or Load selected student and all afterwards
-        if (not studsel) or (studsel and (findPatterns([studsel], [sid]) or selflag)):     
+        if (not studsel) or (studsel and (findPatterns([studsel], [sid]) or selflag)):
             # Search for current student lab based on the ID, use first match
             lab = findPatterns([sid], labs)
             labfile = [os.path.join(labdir, ''.join(l)) for l in lab] if lab else []
-                
+
             # Add Student object to list
             sobj = Student(sid, name, labfile, pos)
             studlist.append(sobj)
@@ -178,7 +178,7 @@ def loadStudents():
 '''
 Given a series of regex patterns remove all strings that match in the given list
 '''
-def findPatterns(patterns=[], alist=[], mexact=0):       
+def findPatterns(patterns=[], alist=[], mexact=0):
     # Traverse given patterns
     filtlist = []  # filtered list
     for p in patterns:
@@ -197,15 +197,15 @@ def processStudents(studlist=None):
     os.chdir(workdir)  # move to working directory
 
     if clean: print("Cleaning workspace: " + workdir)
- 
+
     # Traverse student list
     misslist = []  # list for students with no lab submission
     for stud in studlist:
-        # Clean student lab from working directory 
+        # Clean student lab from working directory
         if clean:
             if os.path.exists(stud.sid): shutil.rmtree(stud.sid)
             continue
-            
+
         # Display student info, do not process
         if display:
             stud.print()
@@ -219,7 +219,7 @@ def processStudents(studlist=None):
             print("*** Warning: no lab found for student ***\n")
             misslist.append(stud)
             continue
-       
+
         # Iterate through each lab of current student
         nlabs = len(stud.lab)
         for i in range(nlabs):
@@ -238,31 +238,31 @@ def processStudents(studlist=None):
                     return  # quit program
 
                 if res in ['n']: break   # go to next student
-            
+
                 # Uncompress/copy lab and run
                 if extractLab(stud,i): processLab(stud)
                 os.chdir(workdir)  # move back to working directory
-            
+
             # Close files opened for current user
             subprockill(proclist)
-    
+
     # Print students missing lab submissions
     if misslist:
         print("\n\n*** Students missing lab ***\n")
         for stud in misslist: stud.print()
 ##############################################################################
-          
+
 '''
 Uncompress/copy lab submission and moves into lab directory
 '''
 def extractLab(stud=None,i=0):
     # Set lab for processing
     studlab = stud.lab[i]
-    
+
     # Get file extension from lab submission
     filenm, filext = os.path.splitext(studlab)
     filext = filext.lower()
-    
+
     # Special case of file extension pair, .tar.*
     extpair = False
     if ".tar." in studlab:
@@ -270,7 +270,7 @@ def extractLab(stud=None,i=0):
         filenm, filext2 = os.path.splitext(filenm)
         filext2 = filext2.lower()
         filext = ''.join([filext2, filext])
-    
+
     # Check status of running directory for current student
     rundir = stud.sid  # running directory same as student ID
     existflag = os.path.exists(rundir)
@@ -281,9 +281,9 @@ def extractLab(stud=None,i=0):
     elif existflag and force:
         shutil.rmtree(rundir)  # delete lab directory
         print("*** lab running directory...overwritten ***")
-    else:      
+    else:
         print("*** lab running directory...created ***")
-    
+
     # If a compressed file, create running directory and move into it
     if filext:
         os.mkdir(rundir)
@@ -291,7 +291,7 @@ def extractLab(stud=None,i=0):
     # If lab is uncompressed, move to working directory
     else:
         os.chdir(workdir) # move into working directory
-        
+
     try:
         # If not a compressed file, copy lab and move into it
         if not filext:
@@ -334,7 +334,7 @@ def extractLab(stud=None,i=0):
         shutil.rmtree(rundir)
         return False
     return True
-        
+
 ##############################################################################
 
 '''
@@ -345,7 +345,7 @@ def viewerSelect(afile=''):
     # Parse file extension
     filenm, filext = os.path.splitext(afile)
     filext = filext.lower()
-    
+
     # If a valid C/C++ source file
     if filext in [".cpp", ".hpp", ".c", ".h"]:
         viewer = "/usr/bin/gedit"
@@ -387,7 +387,7 @@ def viewerSelect(afile=''):
         opts = ''
         #viewer = "notepad++"
         #opts = "-lnormal"
-    
+
     # Open file, redirect stdout/stderr to /dev/null
     cmd = "\"" + viewer + "\" " + opts + " \"" + afile + "\""
     proclist.append(subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
@@ -401,12 +401,12 @@ def compileLab(afile='', inc=''):
     # Only use include directories for C++ programs
     if not cplusplus: inc = ''
 
-    # Set attempt limit for compiling program 
+    # Set attempt limit for compiling program
     maxattempts = 3;
     attempts = 0;
     while attempts < maxattempts:
         try:
-            # Prompt user to compile/run lab 
+            # Prompt user to compile/run lab
             while True:
                 iquery = "RUN PROG? [y]es, [n]o, [i]nfiles --> " + afile + ": "
                 resstr = input(iquery)
@@ -419,13 +419,13 @@ def compileLab(afile='', inc=''):
                     reslist = resstr.split()
                     res = reslist[0].lower()
 
-                # Print input files if selected  
-                if res in ['i']: 
+                # Print input files if selected
+                if res in ['i']:
                     for i in range(len(infiles)):
                         print(str(i) + ' ' + infiles[i])
                     continue
 
-                # Check if input file was selected 
+                # Check if input file was selected
                 infile = ''
                 if len(reslist) == 2:
                     # Validate file index
@@ -434,13 +434,13 @@ def compileLab(afile='', inc=''):
                         print("*** Warning: index for input file is out of range ***\n")
                         continue
 
-                    # Get file and validate 
+                    # Get file and validate
                     infile = infiles[inpidx]
                     if not os.path.exists(infile):
                         print("*** Warning: input file does not exist ***\n")
                         continue
-     
-                # Stop using file     
+
+                # Stop using file
                 if res in ['n']:
                     attempts = maxattempts
                     break
@@ -449,7 +449,7 @@ def compileLab(afile='', inc=''):
                 cmd = compiler + ' ' + buildflags + ' ' + inc + ' ' + afile
                 print("\n*** compiling: " + cmd + " ***\n")
                 if cplusplus:
-                    if not os.system(cmd):         
+                    if not os.system(cmd):
                         progname = "prog"
                         cmd2 = "./" + progname
                         if infile:
@@ -503,7 +503,7 @@ def processLab(stud=None):
     partdirs = [[] for i in range(2)]  # store directories for lab parts
     partfiles = [[] for i in range(2)]  # store source files for lab parts
     partbases = []  # store the base directories for lab parts
-   
+
     # Check if current directory is itself a lab part
     print()
     if len(os.listdir()) > 0:
@@ -512,29 +512,29 @@ def processLab(stud=None):
     res = input(iquery).lower()
     while not res in ['y', 'n', 'c', 'x']:
         res = input(iquery).lower()
-    if res in ['c']:  # consider subdirectory as a compilation part                
+    if res in ['c']:  # consider subdirectory as a compilation part
         partdirs[pidx].append(os.getcwd())    # add to top parts directories
         partbases.append(os.path.basename(os.getcwd()))  # add to base parts directories
         pidx = pidx + 1  # part number
     elif res in ['n', 'x']: return  # exit processing lab
-       
+
     # Traverse the lab directory tree
     for root, dirs, files in os.walk(os.getcwd()):
         # Move to current root directory
         os.chdir(root)
-        
+
         # Make a temporary root using current root
         troot = root.replace(workdir,'')
         if troot.startswith("/"): troot = troot[1:]  # remove initial backslash
-        
+
         # Prune hidden/temporary/MACOSX directories
         for p in findPatterns(["^(\s*[.~]+)", "MACOSX"], dirs): dirs.remove(p)
-        
+
         # Print directories available
         #print()
         #if len(dirs) > 0: print(troot + '/' + str(dirs))
 
-        # Traverse subdirectories to prune    
+        # Traverse subdirectories to prune
         tdirs = dirs[:]  # get copy of subdirectory list, slice
         for d in tdirs:
             # Print files inside current directory
@@ -552,21 +552,21 @@ def processLab(stud=None):
                     partdirs[pidx].append(root + '/' + d)    # add to top parts directories
                     partbases.append(d)  # add to base parts directories
                     pidx = pidx + 1  # part number
-            elif res in ['x']: return  # exit processing lab          
+            elif res in ['x']: return  # exit processing lab
 
         # Prune hidden/temporary/executable files
         for p in findPatterns(["^(\s*[.~]+)","[.]exe$"], files): files.remove(p)
-          
+
         # Traverse files to open/compile
         for afile in files:
-            iquery = "OPEN FILE? [y]es, [n]o, e[x]it --> " + troot + '/' + afile + ": "        
+            iquery = "OPEN FILE? [y]es, [n]o, e[x]it --> " + troot + '/' + afile + ": "
             res = input(iquery).lower()
             while not res in ['y', 'n', 'x']:
                 res = input(iquery).lower()
             # View source file
             if res in ['y']: viewerSelect(afile)
             elif res in ['x']: return  # exit processing lab
-            
+
             # Check if source file, compile or add to compilation parts
             filenm, filext = os.path.splitext(afile)
             filext = filext.lower()
@@ -574,7 +574,7 @@ def processLab(stud=None):
             if filext in sourcext:
                 if not pidx: compileLab('\"' + afile + '\"')
                 else: parseRelPaths(troot, partbases, partfiles, afile, 1)
-     
+
     # Compile each lab part, if necessary
     for i in range(pidx):
         print("\nCompiling lab part " + str(i+1))
@@ -583,7 +583,7 @@ def processLab(stud=None):
         # Concatenate include directories and source files
         incdirs = '-I\"' + '\" -I\"'.join(partdirs[i][:]) + '\"'
         srcfiles = '\"' + '\" \"'.join(partfiles[i]) + '\"'
-        compileLab(srcfiles, incdirs)    
+        compileLab(srcfiles, incdirs)
 ##############################################################################
 
 '''
