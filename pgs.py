@@ -157,8 +157,28 @@ def loadStudents():
     pos = selflag = 0
     for stud in studDB:
         # Split student entry into form [ID, FIRSTNAME, LASTNAME]
-        sid, fn, ln = stud.split()
-        name = fn + ' ' + ln
+
+        # TODO: use delimited format (tsv or csv) to allow compound first and last names.
+        #sid, fn, ln = stud.split()
+        #name = fn + ' ' + ln
+
+        # NOTE: Temp fix to delimited format
+        studfields = stud.split()
+        nstudfields = len(studfields)
+        if nstudfields == 1:
+            sid = studfields
+            fn = ln = name = ''
+        elif nstudfields == 2:
+            sid, fn = studfields
+            ln = ''
+            name = fn
+        elif nstudfields == 3:
+            sid, fn, ln = studfields
+            name = fn + ' ' + ln
+        else:
+            sid, fn = studfields[0:2]
+            ln = ' '.join(studfields[2:nstudfields])
+            name = fn + ' ' + ln
 
         # Load all students or Load selected student and all afterwards
         if (not studsel) or (studsel and (findPatterns([studsel], [sid]) or selflag)):
