@@ -1,2 +1,6 @@
-doc/
+paper/
 extra/
+doc/*/
+
+__pycache__/
+*.py[cod]

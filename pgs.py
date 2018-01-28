@@ -1,62 +1,124 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 '''
-pscript.py
+PGS: Programming Grader Shell Tool
 
+This is a command line tool that aids the grading process of programming
+assignment/labs by providing the following functionalities:
+    * Traverse lab directories and files
+    * Support anonymized grading
+    * Next/prev student
+    * List/open files
+    * Set input/output files
+    * Mark/classify directories/files for compilation
+    * Compile program
+    * Run program
+
+A text configuration file is used to specify the list of students
+(with unique identifiers) to consider during grading.
 From the student info file, the ID is used to run
 corresponding lab from the labs directory.
-'''
-__author__ = 'Eduardo Ponce'
-__date__ = '2/1/2017'
-##############################################################################
 
-# Libraries
-import os, sys   # system libs
-import argparse  # argument parser libs
-import re, shutil  # regex, filesystem libs
-import zipfile, tarfile  # archive libs
-import rarfile  # archive libs
-import gzip, bz2      # compression libs
-import subprocess, signal # child processes and signals
-##############################################################################
+Example:
+python3 pgs.py --help
+python3 pgs.py -s
+
+Todo:
+    * Manual
+    * Configuration file
+    * Clean code
+    * Change system calls to subprocess
+    * Refactor framework to behave like a shell with custom commands,
+      commands that are not part of the framework are passed directly
+      to the underlying shell. Maybe it is better to make real shell
+      commands prepend an 'l' similar to sftp.
+    * Design GUI interface (ncurses, qt, gtk)
+'''
+
+import os
+import sys
+import argparse
+from argparse import RawTextHelpFormatter
+import re
+import shutil
+import zipfile
+import tarfile
+import rarfile
+import gzip
+import bz2
+import subprocess
+import signal
+
 
 # Global build options, supports C++ and Python
-cplusplus = None
+cplusplus = False
+'''bool: Default enable/disable C++ compiler'''
+
 sourcext = []
+'''list: Default file extensions supported'''
+
 compiler = ''
+'''str: Default compiler'''
+
 buildflags = ''
+'''str: Default common compiler build flags'''
+
 
 # Global variables
-labdir = ''    # directory with all students compressed labs
-workdir = ''   # working directory for running labs
-studfile = ''  # file with students info
-studsel = ''   # student ID to start processing
-infiles = []   # input files for programs
-force = False  # flag, if set overwrite labs even if exists
-display = False # flag, if set display student file info and exit
-clean = False  # flag, if set all labs in working directory are deleted
-##############################################################################
+labdir = ''
+'''str: Directory with all students compressed labs'''
 
-# Subprocess handles are stored in a list
-# to enable signal communication (e.g., kill)
+workdir = ''
+'''str: Working directory for running labs'''
+
+studfile = ''
+'''str: File with students info'''
+
+studsel = ''
+'''str: Student ID to start processing'''
+
+infiles = []
+'''list: Input files for programs'''
+
+force = False
+'''bool: Flag, if set overwrite labs even if exists'''
+
+display = False
+'''bool: Flag, if set display student file info and exit'''
+
+clean = False
+'''bool: Flag, if set all labs in working directory are deleted'''
+
 proclist = []
+'''list: Subprocess handles, enable signal communication (e.g., kill)'''
 
-'''
-Parse command line arguments
-'''
+
 def parseArgs():
-    # Create argument parser object
-    parser = argparse.ArgumentParser(prog="LabGrader", description="Run CS505 labs")
+    '''
+    Parse and validate command line arguments.
+    '''
+    parser = argparse.ArgumentParser(prog=__file__,
+             description='PGS: Programming Grader Shell Tool',
+             formatter_class=RawTextHelpFormatter)
 
-    # Add command line options to parser
-    parser.add_argument('-d', '--labdir', type=str, default=os.getcwd(),
-                        dest="labdir", help="directory with compressed labs")
-    parser.add_argument('-w', '--workdir', type=str, default=os.getcwd(),
-                        dest="workdir", help="working directory for running labs")
-    parser.add_argument('-l', '--studfile', type=str, default='',
-                        dest='studfile', help='file with student info')
-    parser.add_argument('-s', '--studsel', type=str, default='',
-                        dest='studsel', help='student ID to start processing')
+    parser.add_argument('-d', '--labdir', type=str, dest='labdir',
+                        default=os.getcwd(),
+                        help='Directory with compressed labs\n'
+                             'Default is \'' + os.getcwd() + '\'')
+
+    parser.add_argument('-w', '--workdir', type=str, dest='workdir',
+                        default=os.getcwd(),
+                        help='Working directory for running labs\n'
+                             'Default is \'' + os.getcwd() + '\'')
+
+    parser.add_argument('-l', '--studfile', type=str, dest='studfile',
+                        default='',
+                        help='File with student info')
+
+    parser.add_argument('-s', '--studsel', type=str, dest='studsel',
+                        default='',
+                        help='student ID to start processing')
+
     # Method 1 uses -i for each file
     # Method 2 uses single -i with multiple files which permits bash regex
     # Both are lists so does not affect program
@@ -73,7 +135,6 @@ def parseArgs():
     parser.add_argument('-p', '--compiler', type=str, default='g++',
                         dest='compiler', help='compiler program for building')
 
-    # Parse arguments
     args = parser.parse_args()
 
     # Set global variables with parsed arguments
@@ -107,12 +168,11 @@ def parseArgs():
         return False
     return True
 
-##############################################################################
 
-'''
-Student object
-'''
 class Student(object):
+    '''
+    Student object
+    '''
     # Constructor
     def __init__(self, sid='', fn='', labfile=[], pos=-1):
         self.sid = sid
@@ -127,13 +187,13 @@ class Student(object):
         if idx == -1: lab = ", ".join([os.path.basename(l) for l in self.lab])
         else: lab = ", ".join([os.path.basename(self.lab[idx])])
         print(str(self.pos + 1) + ". " + self.fn + " (" + self.sid + ") --> [" + lab + "]\n")
-##############################################################################
 
-'''
-Create list of Student objects using the file with students info
-and the students lab submissions. Moves to working directory.
-'''
+
 def loadStudents():
+    '''
+    Create list of Student objects using the file with students info
+    and the students lab submissions. Moves to working directory.
+    '''
     os.chdir(workdir)  # move to working directory
 
     # Load students labs into local variable
@@ -193,12 +253,12 @@ def loadStudents():
             selflag = 1
 
     return studlist
-##############################################################################
 
-'''
-Given a series of regex patterns remove all strings that match in the given list
-'''
+
 def findPatterns(patterns=[], alist=[], mexact=0):
+    '''
+    Given a series of regex patterns remove all strings that match in the given list
+    '''
     # Traverse given patterns
     filtlist = []  # filtered list
     for p in patterns:
@@ -208,12 +268,12 @@ def findPatterns(patterns=[], alist=[], mexact=0):
             if regex.search(l): filtlist.append(l)
 
     return filtlist
-##############################################################################
 
-'''
-Process students lab assignments (uncompress/copy, compile, run)
-'''
+
 def processStudents(studlist=None):
+    '''
+    Process students lab assignments (uncompress/copy, compile, run)
+    '''
     os.chdir(workdir)  # move to working directory
 
     if clean: print("Cleaning workspace: " + workdir)
@@ -270,12 +330,12 @@ def processStudents(studlist=None):
     if misslist:
         print("\n\n*** Students missing lab ***\n")
         for stud in misslist: stud.print()
-##############################################################################
 
-'''
-Uncompress/copy lab submission and moves into lab directory
-'''
+
 def extractLab(stud=None,i=0):
+    '''
+    Uncompress/copy lab submission and moves into lab directory
+    '''
     # Set lab for processing
     studlab = stud.lab[i]
 
@@ -355,13 +415,12 @@ def extractLab(stud=None,i=0):
         return False
     return True
 
-##############################################################################
 
-'''
-Given a file, use its extension to select a viewer program for opening the file.
-The function builds a command line string that is executed via system command.
-'''
 def viewerSelect(afile=''):
+    '''
+    Given a file, use its extension to select a viewer program for opening the file.
+    The function builds a command line string that is executed via system command.
+    '''
     # Parse file extension
     filenm, filext = os.path.splitext(afile)
     filext = filext.lower()
@@ -412,12 +471,12 @@ def viewerSelect(afile=''):
     cmd = "\"" + viewer + "\" " + opts + " \"" + afile + "\""
     proclist.append(subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
                                      stderr=subprocess.DEVNULL, shell=True))
-##############################################################################
 
-'''
-Compile lab source codes, one source file at a time
-'''
+
 def compileLab(afile='', inc=''):
+    '''
+    Compile lab source codes, one source file at a time
+    '''
     # Only use include directories for C++ programs
     if not cplusplus: inc = ''
 
@@ -492,13 +551,13 @@ def compileLab(afile='', inc=''):
         except:
             print("\n*** Error: compile/run failed for " + afile + " ***\n")
             attempts = attempts + 1
-##############################################################################
 
-'''
-Parse a root path based on a match with a base path to obtain a relative path.
-The relative path is prefix to the given directory or file and stored in lists.
-'''
+
 def parseRelPaths(root='', basepaths=[], rellists=[], dir_file='', mexact=0):
+    '''
+    Parse a root path based on a match with a base path to obtain a relative path.
+    The relative path is prefix to the given directory or file and stored in lists.
+    '''
     # Iterate through all base paths
     for i in range(len(basepaths)):
         # Check if base path is subdirectory of root
@@ -513,12 +572,12 @@ def parseRelPaths(root='', basepaths=[], rellists=[], dir_file='', mexact=0):
             else: rellists[i].append(dir_file)
             return True
     return False
-##############################################################################
 
-'''
-Search student lab directory for source files
-'''
+
 def processLab(stud=None):
+    '''
+    Search student lab directory for source files
+    '''
     pidx = 0  # part number
     partdirs = [[] for i in range(2)]  # store directories for lab parts
     partfiles = [[] for i in range(2)]  # store source files for lab parts
@@ -604,14 +663,14 @@ def processLab(stud=None):
         incdirs = '-I\"' + '\" -I\"'.join(partdirs[i][:]) + '\"'
         srcfiles = '\"' + '\" \"'.join(partfiles[i]) + '\"'
         compileLab(srcfiles, incdirs)
-##############################################################################
 
-'''
-Kill all active child processes
-'''
+
 def subprockill(plist):
+    '''
+    Kill all active child processes
+    '''
     for p in plist: p.kill()
-##############################################################################
+
 
 '''
 Main entry point
@@ -619,4 +678,4 @@ Main entry point
 if __name__ == "__main__":
     if parseArgs():
         processStudents(loadStudents())
-# EOF
+
